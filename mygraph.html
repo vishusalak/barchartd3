@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+  <style>
+
+                /*.bar {
+                  fill: steelblue;
+                }
+                */
+
+                #page-wrapper {
+                  width: 600px;
+                  background: #FFF;
+                  padding: 1em;
+                  margin: 1em auto;
+                  border-top: 3px solid #000000;
+                  box-shadow: 0 2px 10px rgba(0,0,0,0.8);
+                }
+                .bar:hover {
+                  fill: brown;
+                }
+
+                .axis {
+                  font: 10px sans-serif;
+                }
+
+                .axis path,
+                .axis line {
+                  fill: none;
+                  stroke: #000;
+                  shape-rendering: crispEdges;
+                }
+
+                .x.axis path {
+                  display: none;
+                }
+                .d3-tip {
+                  line-height: 1;
+                  font-weight: bold;
+                  padding: 12px;
+                  background: rgba(0, 0, 0, 0.8);
+                  color: #fff;
+                  border-radius: 2px;
+                }
+
+                /* Creates a small triangle extender for the tooltip */
+                .d3-tip:after {
+                  box-sizing: border-box;
+                  display: inline;
+                  font-size: 10px;
+                  width: 100%;
+                  line-height: 1;
+                  color: rgba(0, 0, 0, 0.8);
+                  content: "\25BC";
+                  position: absolute;
+                  text-align: center;
+                }
+
+                /* Style northward tooltips differently */
+                .d3-tip.n:after {
+                  margin: -1px 0 0 0;
+                  top: 100%;
+                  left: 0;
+                }
+
+  </style>
+  <body>
+          <div id="page-wrapper">
+            Select a text file: 
+            <input type="file" id="fileInput">
+            <button id= "graph_it">Graph It!</button>
+          </div>
+  
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+
+      <script src="http://d3js.org/d3.v3.min.js"></script>
+      <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+
+
+        <script>
+        var lowerCaseAlphabet = "abcdefghijklmnopqrstuvwxyz";
+        var upperCaseAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        var letterCounts = new Array(26);
+        var numberOfLetters = 0;
+        
+        function random_bar(data){
+               // alert(data[10].frequency);
+               y.domain([0, d3.max(data, function(d) { return d.frequency; })]);
+              d3.selectAll(".bar")
+              .data(data)
+              .transition()
+              //.delay(500)
+              .duration(1000)
+              .ease("linear")
+              .attr("fill", function(d) { return bar_color(d.frequency); })
+              .attr("x", function(d) { return x(d.letter); })
+              .attr("y", function(d) { return y(d.frequency); })
+              .attr("height", function(d) { return height - y(d.frequency); })
+              ;
+        }
+
+
+        function bar_color(d){
+              var data = letterCounts;
+              data.sort(function(a, b){return a-b});
+              var a = data.indexOf(d);
+              if(a<9)
+                return "rgb(255,0,0)";
+              else if (a>17)
+                return "rgb(0,255,0)";
+              else
+                return "rgb(255,255,0)";
+
+        }
+
+
+        function zeroLetterCounts() {
+              var i;
+              for (i=0; i<26; i++) {
+                letterCounts[i] = 0;
+              }
+              numberOfLetters = 0;
+        }
+
+
+        function charToIndex(ch) {
+              var ret;
+              ret = lowerCaseAlphabet.indexOf(ch);
+              if (ret >= 0) return ret;
+              return upperCaseAlphabet.indexOf(ch);
+        }
+
+
+        function recordInputLetters () {
+              var i, charIndex;
+              var inputText = ipData;
+              // alert(ipData);
+              for (i=0; i<inputText.length; i++) {
+                charIndex = charToIndex(inputText.charAt(i));
+                if (charIndex >=0) {
+                  letterCounts[charIndex]++;
+                  numberOfLetters++;
+                }
+              }
+              // alert(numberOfLetters);
+              // alert(letterCounts[10]);
+        }
+
+
+        var fileInput = document.getElementById('fileInput');
+        fileInput.addEventListener('change', function(e) {
+              var file = fileInput.files[0];
+              var textType = /text.*/;
+
+              if (file.type.match(textType)) {
+                var reader = new FileReader();
+
+                reader.onload = function(e) {
+                  ipData = reader.result;
+                  zeroLetterCounts() 
+                  recordInputLetters();
+                };
+                
+                reader.readAsText(file);
+                 
+               
+                //   for(var i = 0;i <= 4 ; i++)
+                //   alert(letterCounts[i]); 
+              } else {
+                   alert("File not supported!");
+              }
+        });
+        // alert(ipData);
+        // alert(letterCounts[9]);
+
+        var margin = {top: 20, right: 20, bottom: 30, left: 40},
+            width = 960 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+        var x = d3.scale.ordinal()
+            .rangeRoundBands([0, width], .1);
+
+        var y = d3.scale.linear()
+            .range([height, 0]);
+
+        var xAxis = d3.svg.axis()
+            .scale(x)
+            .orient("bottom");
+
+        var yAxis = d3.svg.axis()
+            .scale(y)
+            .orient("left")
+            .ticks(10, "%");
+
+        var tip1 = d3.tip()
+          .attr('class', 'd3-tip')
+          .offset([-10, 0])
+          .html(function(d) {
+            return "<strong>Frequency:</strong> <span style='color:red'>" + d.frequency + "</span>";
+          });
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        svg.call(tip1);
+
+
+
+        d3.tsv("data1.tsv", type, function(error, data) {
+          x.domain(data.map(function(d) { return d.letter; }));
+          y.domain([0, d3.max(data, function(d) { return d.frequency; })]);
+
+          svg.append("g")
+              .attr("class", "x axis")
+              .attr("transform", "translate(0," + height + ")")
+              .call(xAxis);
+           // alert(data[0].frequency);
+
+          svg.append("g")
+              .attr("class", "y axis")
+              .call(yAxis)
+            .append("text")
+              .attr("transform", "rotate(-90)")
+              .attr("y", 6)
+              .attr("dy", ".71em")
+              .style("text-anchor", "end")
+              .text("Frequency");
+
+          d3.select("button")
+              .on("click", function() {
+
+              for (var i = 0; i < 26; i++) {
+              data[i].frequency = letterCounts[i];
+              }
+               random_bar(data);
+              });
+              
+          svg.selectAll(".bar")
+              .data(data)
+            .enter().append("rect")
+              .attr("class", "bar")
+              .attr("id",function(d){return 'bar'+d.letter;})
+              .attr("x", function(d) { return x(d.letter); })
+              .attr("width", x.rangeBand())
+              .attr("y", function(d) { return y(d.frequency); })
+              .attr("height", function(d) { return height - y(d.frequency); })
+              .attr("fill",function(d){return "rgb("+ (255 - (20*Math.round(d.frequency * 100))) +" , " + 20*Math.round(d.frequency * 100) + ", 0)";})
+              .on("mouseover",tip1.show)
+              .on("mouseout",tip1.hide);
+                    });
+
+
+        function type(d) {
+          d.frequency = +d.frequency;
+          return d;
+        }
+
+
+
+        </script>
+  </body>
